@@ -240,7 +240,10 @@ function App() {
           src='https://t4.ftcdn.net/jpg/07/33/91/73/360_F_733917372_WX8Yvk6XkfEX9eznFpLxqwttC6d3glR4.jpg'
           alt='Instagram'/>
         {authToken ? (
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+          <span style={{ marginRight: '10px' }}>Hello {username}</span>
           <Button onClick={() => signOut()}>Logout</Button>
+        </div>
         ) : (
           <div>
             <Button onClick={() => setOpenSignIn(true)}>Login</Button>

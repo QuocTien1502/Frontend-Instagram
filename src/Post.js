@@ -9,6 +9,8 @@ function Post({post, authToken, authTokenType, username}) {
     const [imageUrl, setImageUrl] = useState('')
     const [comments, setComments] = useState([])
     const [newComment, setNewComment] = useState('')
+    const [isEditing, setIsEditing] = useState(false); // Kiểm soát chế độ chỉnh sửa
+    const [updatedCaption, setUpdatedCaption] = useState(post.caption);
 
     useEffect(()=> {
         if (post.image_url_type == 'absolute') {
@@ -39,9 +41,38 @@ function Post({post, authToken, authTokenType, username}) {
             })
             .catch(error => {
                 console.log(error);
-                
+
             })
     }
+
+    const handleUpdateCaption = (event) => {
+        event?.preventDefault();
+
+        const requestOptions = {
+            method: 'PUT',
+            headers: new Headers({
+                'Authorization': authTokenType + ' ' + authToken
+            })
+        };
+
+        // Thêm new_caption vào URL dưới dạng query parameter
+        const updateUrl = `${BASE_URL}post/update-caption/${post.id}?new_caption=${encodeURIComponent(updatedCaption)}`;
+
+        fetch(updateUrl, requestOptions)
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                }
+                throw response;
+            })
+            .then(data => {
+                post.caption = updatedCaption; // Cập nhật giao diện
+                setIsEditing(false); // Thoát chế độ chỉnh sửa
+            })
+            .catch(error => {
+                console.log(error);
+            });
+    };
 
     const postComment = (event) => {
         event?.preventDefault()
@@ -72,7 +103,7 @@ function Post({post, authToken, authTokenType, username}) {
             })
             .catch(error => {
                 console.log(error);
-                
+
             })
             .finally(() => {
                 setNewComment('')
@@ -92,7 +123,7 @@ function Post({post, authToken, authTokenType, username}) {
             })
             .catch(error => {
                 console.log(error);
-                
+
             })
     }
 
@@ -107,6 +138,28 @@ function Post({post, authToken, authTokenType, username}) {
                     <Button className="post_delete" onClick={handleDelete}>
                         Delete
                     </Button>
+                    {!isEditing ? (
+                        <Button className="post_update" onClick={() => setIsEditing(true)}>
+                            Update
+                        </Button>
+                    ) : (
+                        <form onSubmit={handleUpdateCaption} style={{ display: 'inline-block', marginTop: '10px' }}>
+                            <div>
+                                <input
+                                    type="text"
+                                    value={updatedCaption}
+                                    onChange={(e) => setUpdatedCaption(e.target.value)}
+                                    placeholder="Enter new caption"
+                                    style={{ marginBottom: '10px', display: 'block' }}
+                                />
+                            </div>
+                            <div>
+                                <Button type="submit" style={{ marginRight: '5px' }}>Save</Button>
+                                <Button onClick={() => setIsEditing(false)}>Cancel</Button>
+                            </div>
+                        </form>
+                    )}
+
                 </div>
             </div>
             <img
