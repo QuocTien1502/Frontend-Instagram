@@ -44,6 +44,8 @@ function App() {
   const [authTokenType, setAuthTokenType] = useState(null)
   const [userId, setUserId] = useState('')
   const [email, setEmail] = useState('')
+  const [searchUsername, setSearchUsername] = useState('');
+  const [searchedPosts, setSearchedPosts] = useState([]);
 
   useEffect(() => {
     setAuthToken(window.localStorage.getItem('authToken'))
@@ -96,6 +98,37 @@ function App() {
         alert(error)
       })
   },[])
+
+  const handleSearch = () => {
+    if (!searchUsername.trim()) {
+        alert('Please enter a username to search');
+        return;
+    }
+    
+    fetch(`${BASE_URL}post/${searchUsername}`)
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error('User not found or no posts available');
+            }
+            return response.json();
+        })
+        .then((data) => {
+            // Sắp xếp bài post theo timestamp (mới nhất trước)
+            const sortedPosts = data.sort((a, b) => {
+                const t_a = a.timestamp.split(/[-T:]/);
+                const t_b = b.timestamp.split(/[-T:]/);
+                const d_a = new Date(Date.UTC(t_a[0], t_a[1] - 1, t_a[2], t_a[3], t_a[4], t_a[5]));
+                const d_b = new Date(Date.UTC(t_b[0], t_b[1] - 1, t_b[2], t_b[3], t_b[4], t_b[5]));
+                return d_b - d_a;
+            });
+
+            setSearchedPosts(sortedPosts);
+        })
+        .catch((error) => {
+            console.error(error);
+            alert(error.message);
+        });
+};
 
   const signIn = (event) => {
     event?.preventDefault();
@@ -234,11 +267,20 @@ function App() {
 
       </Modal>
 
-
       <div className='app_header'>
         <img className='app_headerImage'
           src='https://t4.ftcdn.net/jpg/07/33/91/73/360_F_733917372_WX8Yvk6XkfEX9eznFpLxqwttC6d3glR4.jpg'
           alt='Instagram'/>
+        <div className='app_search'>
+          <Input
+            placeholder='Search posts by username'
+            type='text'
+            value={searchUsername}
+            onChange={(e) => setSearchUsername(e.target.value)}
+            style={{ marginRight: '10px' }}
+          />
+          <Button onClick={handleSearch}>Search</Button>
+        </div>
         {authToken ? (
           <div style={{ display: 'flex', alignItems: 'center' }}>
           <span style={{ marginRight: '10px' }}>Hello {username}</span>
@@ -252,18 +294,33 @@ function App() {
           )
         }     
       </div>
+
       <div className='app_post'>
         {
-          posts.map(post=> (
-            <Post
-            post = {post}
-            authToken={authToken}
-            authTokenType={authTokenType}
-            username={username}
-            />
-          ))
+          searchedPosts.length > 0 ? (
+            searchedPosts.map(post => (
+              <Post
+                key={post.id}
+                post={post}
+                authToken={authToken}
+                authTokenType={authTokenType}
+                username={username}
+              />
+            ))
+          ) : (
+            posts.map(post => (
+              <Post
+                key={post.id}
+                post={post}
+                authToken={authToken}
+                authTokenType={authTokenType}
+                username={username}
+              />
+            ))
+          )
         }
       </div>
+
       {
         authToken ? (
           <ImageUpload
